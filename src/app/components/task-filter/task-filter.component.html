@@ -1,0 +1,13 @@
+<div class="flex justify-center gap-2 my-4">
+  <button
+    *ngFor="let f of filters"
+    (click)="change.emit(f)"
+    class="px-4 py-1 rounded-full text-sm border transition font-medium"
+    [ngClass]="{
+      'bg-blue-600 text-white border-blue-600': active === f,
+      'bg-white text-gray-700 border-gray-300 hover:bg-gray-100': active !== f
+    }"
+  >
+    {{ f | titlecase }}
+  </button>
+</div>

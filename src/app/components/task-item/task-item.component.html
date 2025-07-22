@@ -1,1 +1,17 @@
-<p>task-item works!</p>
+<div
+  class="flex justify-between items-center bg-white p-4 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition">
+  <div class="flex items-center gap-3">
+    <input type="checkbox" class="w-5 h-5 text-blue-600 accent-blue-600" [checked]="task?.completed"
+      (change)="toggle.emit(task.id)" />
+    <span [class.line-through]="task?.completed" [class.text-gray-400]="task?.completed" class="text-base font-medium">
+      {{ task?.title }}
+    </span>
+  </div>
+
+  <span class="text-xs font-semibold px-3 py-1 rounded-full" [ngClass]="{
+    'bg-green-100 text-green-700': task?.completed,
+    'bg-yellow-100 text-yellow-700': !task?.completed
+  }">
+    {{ task?.completed ? 'Completed' : 'Incomplete' }}
+  </span>
+</div>

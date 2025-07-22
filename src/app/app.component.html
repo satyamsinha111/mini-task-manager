@@ -1,1 +1,20 @@
-<h1>Task manager app</h1>
+<div class="min-h-screen bg-gray-50 p-4">
+  <div class="max-w-2xl mx-auto space-y-6">
+    <h1 class="text-3xl font-bold text-gray-800 text-center"> Mini Task Manager</h1>
+
+    <app-add-task-form (add)="addTask($event)" />
+    <div class="flex flex-wrap justify-between gap-2" style="align-items: center;">
+      <app-task-filter [active]="statusFilter()" (change)="setStatusFilter($event)" />
+      <select
+        class="appearance-none px-4 py-1.5 h-10 text-sm border border-gray-300 rounded-full bg-white text-gray-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+        [ngModel]="categoryFilter()" (ngModelChange)="setCategoryFilter($event)">
+        <option value="">All Categories</option>
+        <option *ngFor="let cat of categories" [value]="cat">
+          {{ cat }}
+        </option>
+      </select>
+    </div>
+
+    <app-task-list [tasks]="filteredTasks" (toggle)="toggleTask($event)" (reorder)="reorderTasks($event)" />
+  </div>
+</div>

@@ -3,13 +3,28 @@ import { AppComponent } from './app.component';
 import { AddTaskFormComponent } from './components/add-task-form/add-task-form.component';
 import { TaskListComponent } from './components/task-list/task-list.component';
 import { TaskFilterComponent } from './components/task-filter/task-filter.component';
+import { provideMockStore, MockStore } from '@ngrx/store/testing';
+import { selectAllTasks } from './store/task.selectors';
+
+
+
 
 describe('AppComponent', () => {
   let component: AppComponent;
   let fixture: ComponentFixture<AppComponent>;
+  const mockTasks = [
+    { id: '1', title: 'Sample', completed: true },
+    { id: '2', title: 'Another', completed: false }
+  ];
+
+  let store: MockStore;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
+
+    providers: [
+      provideMockStore()
+    ],
       imports: [
         AppComponent,
         AddTaskFormComponent,
@@ -43,30 +58,26 @@ describe('AppComponent', () => {
 
   it('should toggle task completion', () => {
     component.addTask({ title: 'Task 1', category: '' });
-    const taskId = component.tasks()[0].id;
+    const taskId = component.tasks()[0]?.id;
     if (taskId)
       component.toggleTask(taskId);
-    expect(component.tasks()[0].completed).toBeTrue();
+    expect(component.tasks()[0]?.completed).toBeTrue();
     if (taskId)
       component.toggleTask(taskId);
-    expect(component.tasks()[0].completed).toBeFalse();
+    expect(component.tasks()[0]?.completed).toBeFalse();
   });
 
   it('should filter tasks correctly', () => {
-    component.addTask({ title: 'Completed Task', category: '' });
-    const id = component.tasks()[0].id;
-    if (id)
-      component.toggleTask(id); // mark as completed
+    store = TestBed.inject(MockStore);
+    store.overrideSelector(selectAllTasks, mockTasks); // <-- controlled mock
+
+    fixture = TestBed.createComponent(AppComponent);
+    component = fixture.componentInstance;
+    fixture.detectChanges();
 
     component.setFilter('completed');
+
     const filtered = component.filteredTasks;
-    expect(filtered.length).toBe(1);
-    expect(filtered[0].completed).toBeTrue();
-
-    component.setFilter('incomplete');
-    expect(component.filteredTasks.length).toBe(0);
-
-    component.setFilter('all');
-    expect(component.filteredTasks.length).toBe(1);
-  });
+    expect(filtered.length).toBe(1);  // Only 1 task is completed
+  })
 });

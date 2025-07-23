@@ -1,3 +1,4 @@
+import { EffectsModule } from '@ngrx/effects';
 import { Component, inject, signal } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { TaskListComponent } from './components/task-list/task-list.component';
@@ -10,18 +11,22 @@ import { moveItemInArray } from '@angular/cdk/drag-drop';
 import { Store } from '@ngrx/store';
 import { selectAllTasks } from './store/task.selectors';
 import { Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
 import * as TaskActions from './store/task.actions';
+
 
 
 @Component({
   selector: 'app-root',
-  imports: [TaskListComponent, AddTaskFormComponent, TaskFilterComponent, FormsModule, CommonModule],
+  imports: [TaskListComponent, AddTaskFormComponent, TaskFilterComponent, FormsModule, CommonModule,EffectsModule],
   templateUrl: './app.component.html',
-  styleUrl: './app.component.scss'
+  styleUrl: './app.component.scss',
+  standalone: true
+
 })
 export class AppComponent {
   private store = inject(Store);
-  tasks$: Observable<Task[]> = this.store.select(selectAllTasks);
+  tasks$: Observable<any[]> = this.store.select(selectAllTasks);
   tasks = signal<Task[]>([]);
   filter = signal<TaskFilter>('all');
   statusFilter = signal<TaskFilter>('all');
@@ -32,23 +37,16 @@ export class AppComponent {
     this.store.dispatch(TaskActions.loadTasks());
   }
 
+ get filteredTasks(): Observable<Task[]> {
+  return this.tasks$.pipe(
+    map((tasks: Task[]) => {
+      if (this.statusFilter() === 'completed') return tasks.filter(t => t.completed);
+      if (this.statusFilter() === 'incomplete') return tasks.filter(t => !t.completed);
+      return tasks;
+    })
+  );
+}
 
-  get filteredTasks() {
-    return this.tasks().filter((task) => {
-      const statusOk =
-        this.statusFilter() === 'all'
-          ? true
-          : this.statusFilter() === 'completed'
-            ? task.completed
-            : !task.completed;
-
-      const categoryOk = this.categoryFilter()
-        ? task.category === this.categoryFilter()
-        : true;
-
-      return statusOk && categoryOk;
-    });
-  }
 
   // reorderTasks(event: { previousIndex: number; currentIndex: number }) {
   //   const filtered = this.filteredTasks;       // currently visible tasks

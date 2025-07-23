@@ -12,10 +12,12 @@ import { CdkDragDrop, DragDropModule, moveItemInArray } from '@angular/cdk/drag-
   templateUrl: './task-list.component.html',
 })
 export class TaskListComponent {
-  @Input() tasks: Task[] = [];
+  @Input() tasks: any[] = [];
   @Output() toggle = new EventEmitter<string>();
   @Output() reorder = new EventEmitter<{ previousIndex: number; currentIndex: number }>();
-
+  ngOnChanges(){
+    console.log(this.tasks)
+  }
   drop(event: CdkDragDrop<Task[]>) {
     if (event.previousIndex !== event.currentIndex) {
       this.reorder.emit({

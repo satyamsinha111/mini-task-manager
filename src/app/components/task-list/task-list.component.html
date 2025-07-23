@@ -5,7 +5,7 @@
     (cdkDropListDropped)="drop($event)"
     class="space-y-3"
   >
-    <div *ngFor="let task of tasks" cdkDrag>
+    <div *ngFor="let task of tasks | async" cdkDrag>
       <app-task-item [task]="task" (toggle)="toggle.emit(task.id)" />
     </div>
   </div>

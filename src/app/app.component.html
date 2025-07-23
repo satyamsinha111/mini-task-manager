@@ -15,6 +15,6 @@
       </select>
     </div>
 
-    <app-task-list [tasks]="filteredTasks" (toggle)="toggleTask($event)" (reorder)="reorderTasks($event)" />
+    <app-task-list [tasks]="(filteredTasks | async) ?? []" (toggle)="toggleTask($event)" (reorder)="reorderTasks($event)" />
   </div>
 </div>

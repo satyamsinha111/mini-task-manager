@@ -1,6 +1,6 @@
 <div class="min-h-screen bg-gray-50 p-4">
   <div class="max-w-2xl mx-auto space-y-6">
-    <h1 class="text-3xl font-bold text-gray-800 text-center"> Mini Task Manager 12</h1>
+    <h1 class="text-3xl font-bold text-gray-800 text-center"> Mini Task Manager</h1>
 
     <app-add-task-form (add)="addTask($event)" />
     <div class="flex flex-wrap justify-between gap-2" style="align-items: center;">
@@ -15,6 +15,6 @@
       </select>
     </div>
 
-    <app-task-list [tasks]="filteredTasks" (toggle)="toggleTask($event)" (reorder)="reorderTasks($event)" />
+    <app-task-list [tasks]="(filteredTasks | async) ?? []" (toggle)="toggleTask($event)" (reorder)="reorderTasks($event)" />
   </div>
 </div>

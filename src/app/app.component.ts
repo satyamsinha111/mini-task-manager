@@ -1,3 +1,4 @@
+import { EffectsModule } from '@ngrx/effects';
 import { Component, inject, signal } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { TaskListComponent } from './components/task-list/task-list.component';
@@ -9,19 +10,23 @@ import { CommonModule } from '@angular/common';
 import { moveItemInArray } from '@angular/cdk/drag-drop';
 import { Store } from '@ngrx/store';
 import { selectAllTasks } from './store/task.selectors';
-import { Observable } from 'rxjs';
+import { firstValueFrom, Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
 import * as TaskActions from './store/task.actions';
+
 
 
 @Component({
   selector: 'app-root',
-  imports: [TaskListComponent, AddTaskFormComponent, TaskFilterComponent, FormsModule, CommonModule],
+  imports: [TaskListComponent, AddTaskFormComponent, TaskFilterComponent, FormsModule, CommonModule,EffectsModule],
   templateUrl: './app.component.html',
-  styleUrl: './app.component.scss'
+  styleUrl: './app.component.scss',
+  standalone: true
+
 })
 export class AppComponent {
   private store = inject(Store);
-  tasks$: Observable<Task[]> = this.store.select(selectAllTasks);
+  tasks$: Observable<any[]> = this.store.select(selectAllTasks);
   tasks = signal<Task[]>([]);
   filter = signal<TaskFilter>('all');
   statusFilter = signal<TaskFilter>('all');
@@ -32,40 +37,48 @@ export class AppComponent {
     this.store.dispatch(TaskActions.loadTasks());
   }
 
+ get filteredTasks(): Observable<Task[]> {
+  return this.tasks$.pipe(
+    map((tasks: Task[]) => {
+      const status = this.statusFilter();
+      const category = this.categoryFilter();
 
-  get filteredTasks() {
-    return this.tasks().filter((task) => {
-      const statusOk =
-        this.statusFilter() === 'all'
-          ? true
-          : this.statusFilter() === 'completed'
-            ? task.completed
-            : !task.completed;
+      let result = tasks;
 
-      const categoryOk = this.categoryFilter()
-        ? task.category === this.categoryFilter()
-        : true;
+      if (status === 'completed') {
+        result = result.filter(t => t.completed);
+      } else if (status === 'incomplete') {
+        result = result.filter(t => !t.completed);
+      }
 
-      return statusOk && categoryOk;
-    });
-  }
+      if (category) {
+        result = result.filter(t => t.category === category);
+      }
 
-  // reorderTasks(event: { previousIndex: number; currentIndex: number }) {
-  //   const filtered = this.filteredTasks;       // currently visible tasks
-  //   const all = this.tasks();                  // full list
+      return result;
+    })
+  );
+}
 
-  //   // Get actual task objects
-  //   const draggedTask = filtered[event.previousIndex];
-  //   const droppedTask = filtered[event.currentIndex];
 
-  //   const draggedIndex = all.findIndex(t => t.id === draggedTask.id);
-  //   const droppedIndex = all.findIndex(t => t.id === droppedTask.id);
 
-  //   const reordered = [...all];
-  //   moveItemInArray(reordered, draggedIndex, droppedIndex);
+  async reorderTasks(event: { previousIndex: number; currentIndex: number }) {
+  const filtered = await firstValueFrom(this.filteredTasks);
 
-  //   this.tasks.set(reordered);
-  // }
+  // Use full tasks list from store directly if needed
+  const all = filtered; // Assuming filtered is same as all in default case
+
+  const draggedTask = filtered[event.previousIndex];
+  const droppedTask = filtered[event.currentIndex];
+
+  const draggedIndex = all.findIndex(t => t.id === draggedTask.id);
+  const droppedIndex = all.findIndex(t => t.id === droppedTask.id);
+
+  const reordered = [...all];
+  moveItemInArray(reordered, draggedIndex, droppedIndex);
+
+  this.store.dispatch(TaskActions.reorderTasks({ tasks: reordered }));
+}
 
   setStatusFilter(filter: TaskFilter) {
     this.statusFilter.set(filter);
@@ -90,9 +103,9 @@ export class AppComponent {
     this.store.dispatch(TaskActions.toggleTask({ id }));
   }
 
-  reorderTasks(newOrder: any) {
-    this.store.dispatch(TaskActions.reorderTasks({ tasks: newOrder }));
-  }
+  // reorderTasks(newOrder: any) {
+  //   this.store.dispatch(TaskActions.reorderTasks({ tasks: newOrder }));
+  // }
   setFilter(f: TaskFilter) {
     this.filter.set(f);
   }

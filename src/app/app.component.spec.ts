@@ -1,83 +1,117 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { AppComponent } from './app.component';
-import { AddTaskFormComponent } from './components/add-task-form/add-task-form.component';
-import { TaskListComponent } from './components/task-list/task-list.component';
-import { TaskFilterComponent } from './components/task-filter/task-filter.component';
 import { provideMockStore, MockStore } from '@ngrx/store/testing';
+import { TaskFilter, Task } from './task.models';
+import * as TaskActions from './store/task.actions';
+import { of } from 'rxjs';
 import { selectAllTasks } from './store/task.selectors';
-
-
-
 
 describe('AppComponent', () => {
   let component: AppComponent;
   let fixture: ComponentFixture<AppComponent>;
-  const mockTasks = [
-    { id: '1', title: 'Sample', completed: true },
-    { id: '2', title: 'Another', completed: false }
-  ];
-
   let store: MockStore;
+  const initialTasks: Task[] = [
+    { id: '1', title: 'Task 1', completed: false },
+    { id: '2', title: 'Task 2', completed: true },
+  ];
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-
-    providers: [
-      provideMockStore()
-    ],
-      imports: [
-        AppComponent,
-        AddTaskFormComponent,
-        TaskListComponent,
-        TaskFilterComponent,
+      imports: [AppComponent],
+      providers: [
+        provideMockStore({
+          selectors: [
+            {
+              selector: selectAllTasks,
+              value: initialTasks,
+            },
+          ],
+        }),
       ],
     }).compileComponents();
 
+    store = TestBed.inject(MockStore);
     fixture = TestBed.createComponent(AppComponent);
     component = fixture.componentInstance;
-    fixture.detectChanges();
+
+    spyOn(store, 'dispatch');
   });
 
-  it('should create TaskPageComponent', () => {
+  it('should create the component', () => {
     expect(component).toBeTruthy();
   });
 
-  it('should start with no tasks', () => {
-    expect(component.tasks()).toEqual([]);
+  it('should dispatch loadTasks on init', () => {
+    component.ngOnInit();
+    expect(store.dispatch).toHaveBeenCalledWith(TaskActions.loadTasks());
   });
 
-  it('should add a task', () => {
-    const initialCount = component.tasks().length;
-    component.addTask({ title: 'Test Task', category: 'Work' });
-
-    const updatedTasks = component.tasks();
-    expect(updatedTasks.length).toBe(initialCount + 1);
-    expect(updatedTasks[0].title).toBe('Test Task');
-    expect(updatedTasks[0].category).toBe('Work');
+  it('should set status filter', () => {
+    component.setStatusFilter('completed');
+    expect(component.statusFilter()).toBe('completed');
   });
 
-  it('should toggle task completion', () => {
-    component.addTask({ title: 'Task 1', category: '' });
-    const taskId = component.tasks()[0]?.id;
-    if (taskId)
-      component.toggleTask(taskId);
-    expect(component.tasks()[0]?.completed).toBeTrue();
-    if (taskId)
-      component.toggleTask(taskId);
-    expect(component.tasks()[0]?.completed).toBeFalse();
+  it('should set category filter', () => {
+    component.setCategoryFilter('Work');
+    expect(component.categoryFilter()).toBe('Work');
   });
 
-  it('should filter tasks correctly', () => {
-    store = TestBed.inject(MockStore);
-    store.overrideSelector(selectAllTasks, mockTasks); // <-- controlled mock
+  it('should dispatch addTask action', () => {
+    const newTask = { title: 'New Task', category: 'Work' };
+    component.addTask(newTask);
 
-    fixture = TestBed.createComponent(AppComponent);
-    component = fixture.componentInstance;
-    fixture.detectChanges();
+    expect(store.dispatch).toHaveBeenCalledWith(
+      jasmine.objectContaining({
+        type: '[Task] Add Task',
+        task: jasmine.objectContaining({
+          title: 'New Task',
+          category: 'Work',
+          completed: false,
+        }),
+      })
+    );
+  });
 
-    component.setFilter('completed');
+  it('should dispatch toggleTask action', () => {
+    component.toggleTask('123');
+    expect(store.dispatch).toHaveBeenCalledWith(
+      TaskActions.toggleTask({ id: '123' })
+    );
+  });
 
-    const filtered = component.filteredTasks;
-    expect(filtered.length).toBe(1);  // Only 1 task is completed
-  })
+  it('should dispatch reorderTasks action', () => {
+    const reordered = [...initialTasks].reverse();
+    component.reorderTasks({
+      previousIndex:0,currentIndex:1
+    });
+    expect(store.dispatch).toHaveBeenCalledWith(
+      TaskActions.reorderTasks({ tasks: reordered })
+    );
+  });
+
+  it('should filter completed tasks', (done) => {
+    component.statusFilter.set('completed');
+    component.filteredTasks.subscribe(filtered => {
+      expect(filtered.length).toBe(1);
+      expect(filtered[0].completed).toBeTrue();
+      done();
+    });
+  });
+
+  it('should filter incomplete tasks', (done) => {
+    component.statusFilter.set('incomplete');
+    component.filteredTasks.subscribe(filtered => {
+      expect(filtered.length).toBe(1);
+      expect(filtered[0].completed).toBeFalse();
+      done();
+    });
+  });
+
+  it('should return all tasks when filter is "all"', (done) => {
+    component.statusFilter.set('all');
+    component.filteredTasks.subscribe(filtered => {
+      expect(filtered.length).toBe(2);
+      done();
+    });
+  });
 });

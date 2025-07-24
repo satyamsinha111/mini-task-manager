@@ -13,19 +13,18 @@ import { map, tap, filter } from 'rxjs/operators';
 @Injectable()
 export class TaskEffects {
   constructor(private actions$: Actions) {
-    console.log('TaskEffects initialized',actions$);
   }
 
   saveToLocalStorage$ = createEffect(
   () =>
-    this.actions$?.pipe(
+    this.actions$.pipe(
       ofType(addTask, toggleTask, reorderTasks),
       tap((action) => {
         const existing: Task[] = this.safelyParse(localStorage.getItem('tasks'));
 
         let updated: Task[] = [];
-
         switch (action.type) {
+
           case addTask.type:
             updated = [action.task, ...existing];
             break;
@@ -51,7 +50,7 @@ export class TaskEffects {
   { dispatch: false }
 );
 
-// ✅ Utility function to safely parse JSON
+// Utility function to safely parse JSON
 private safelyParse(json: string | null): Task[] {
   try {
     const parsed = JSON.parse(json || '[]');

@@ -10,7 +10,7 @@ import { CommonModule } from '@angular/common';
 import { moveItemInArray } from '@angular/cdk/drag-drop';
 import { Store } from '@ngrx/store';
 import { selectAllTasks } from './store/task.selectors';
-import { Observable } from 'rxjs';
+import { firstValueFrom, Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import * as TaskActions from './store/task.actions';
 
@@ -40,30 +40,45 @@ export class AppComponent {
  get filteredTasks(): Observable<Task[]> {
   return this.tasks$.pipe(
     map((tasks: Task[]) => {
-      if (this.statusFilter() === 'completed') return tasks.filter(t => t.completed);
-      if (this.statusFilter() === 'incomplete') return tasks.filter(t => !t.completed);
-      return tasks;
+      const status = this.statusFilter();
+      const category = this.categoryFilter();
+
+      let result = tasks;
+
+      if (status === 'completed') {
+        result = result.filter(t => t.completed);
+      } else if (status === 'incomplete') {
+        result = result.filter(t => !t.completed);
+      }
+
+      if (category) {
+        result = result.filter(t => t.category === category);
+      }
+
+      return result;
     })
   );
 }
 
 
-  // reorderTasks(event: { previousIndex: number; currentIndex: number }) {
-  //   const filtered = this.filteredTasks;       // currently visible tasks
-  //   const all = this.tasks();                  // full list
 
-  //   // Get actual task objects
-  //   const draggedTask = filtered[event.previousIndex];
-  //   const droppedTask = filtered[event.currentIndex];
+  async reorderTasks(event: { previousIndex: number; currentIndex: number }) {
+  const filtered = await firstValueFrom(this.filteredTasks);
 
-  //   const draggedIndex = all.findIndex(t => t.id === draggedTask.id);
-  //   const droppedIndex = all.findIndex(t => t.id === droppedTask.id);
+  // Use full tasks list from store directly if needed
+  const all = filtered; // Assuming filtered is same as all in default case
 
-  //   const reordered = [...all];
-  //   moveItemInArray(reordered, draggedIndex, droppedIndex);
+  const draggedTask = filtered[event.previousIndex];
+  const droppedTask = filtered[event.currentIndex];
 
-  //   this.tasks.set(reordered);
-  // }
+  const draggedIndex = all.findIndex(t => t.id === draggedTask.id);
+  const droppedIndex = all.findIndex(t => t.id === droppedTask.id);
+
+  const reordered = [...all];
+  moveItemInArray(reordered, draggedIndex, droppedIndex);
+
+  this.store.dispatch(TaskActions.reorderTasks({ tasks: reordered }));
+}
 
   setStatusFilter(filter: TaskFilter) {
     this.statusFilter.set(filter);
@@ -88,9 +103,9 @@ export class AppComponent {
     this.store.dispatch(TaskActions.toggleTask({ id }));
   }
 
-  reorderTasks(newOrder: any) {
-    this.store.dispatch(TaskActions.reorderTasks({ tasks: newOrder }));
-  }
+  // reorderTasks(newOrder: any) {
+  //   this.store.dispatch(TaskActions.reorderTasks({ tasks: newOrder }));
+  // }
   setFilter(f: TaskFilter) {
     this.filter.set(f);
   }

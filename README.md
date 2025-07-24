@@ -1,6 +1,6 @@
 # 🧩 Mini Task Manager
 
-A clean, modern, and state-managed task manager built with Angular 19, Tailwind CSS, and NgRx Store. It supports full task CRUD, localStorage persistence via NgRx Effects, filtering, and drag-and-drop (optional).
+A clean, modern, and state-managed task manager built with Angular 19, Tailwind CSS, and NgRx Store. It supports full task CRUD, localStorage persistence via NgRx Effects, filtering, and drag-and-drop.
 
 ---
 
